@@ -8,9 +8,11 @@ use bridge_ethers::signers;
 use std::convert::TryFrom;
 use ethers::abi::Abi;
 use ethers::contract::Contract;
-use ethers::types::Address;
+use ethers::types::{Address, H256};
 use serde_json::Error;
 use std::fs;
+use std::io::Read;
+use async_std::task;
 
 fn main() {
     let provider = Provider::<Http>::try_from(
@@ -33,6 +35,25 @@ fn main() {
     let client = validator_wallet.connect(provider);
     let bridge_escrow_contract = Contract::new(escrow_addr, abi, &client);
     println!("bridge_escrow_contract: {:?}",bridge_escrow_contract);
+    // let data = bridge_escrow_contract
+    //     .method::<_, H256>("withdrawFromEscrowThis",
+    //                        (
+    //                            //Address::from(sender_wallet.private_key()).to_string().to_owned(),
+    //                            //Address::from(receiver_wallet.private_key()).to_string().to_owned(),
+    //                            "100".to_owned(),
+    //                            "0x123".to_owned())).map_err(|e|{
+    //     println!("Error: {}",e)
+    // }).unwrap();
+    let data = bridge_escrow_contract
+        .method::<_, H256>("withdrawFromEscrowThis",
+                           ("0x123".to_owned())).map_err(|e|{
+        println!("Error: {}",e)
+    }).unwrap();
+    task::block_on(async {
+        let tx_hash = data
+            .send().await.unwrap();
+        println!("withdrawFromEscrowThis: {:?}", tx_hash);
+    });
 
 }
 
