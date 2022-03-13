@@ -41,7 +41,7 @@ pub fn get_signers() -> Result<HashMap<&'static str, ethers::signers::Wallet>, S
     let mut pairs: Vec<(&str, ethers::signers::Wallet)> = Vec::new();
     for n in names.iter() {
         let key = get_private_key(&format!("accounts/{}.txt", n))?;
-        let w = ethers::signers::Wallet::from_str(&key).map_err(|e| e.to_string())?;
+        let w = ethers::signers::Wallet::from_str(&key[2..]).map_err(|e| e.to_string())?;
         pairs.push((n, w));
     }
 

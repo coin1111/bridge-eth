@@ -18,9 +18,9 @@ fn main() {
 
     let signers = bridge_ethers::signers::get_signers().unwrap();
 
-    let sender_wallet = bridge_ethers::signers::get_signer(&signers, &"pete");
-    let receiver_wallet = bridge_ethers::signers::get_signer(&signers, &"todd");
-    let validator_wallet = bridge_ethers::signers::get_signer(&signers, &"alice");
+    let sender_wallet = bridge_ethers::signers::get_signer(&signers, &"pete").unwrap();
+    let receiver_wallet = bridge_ethers::signers::get_signer(&signers, &"todd").unwrap();
+    let validator_wallet = bridge_ethers::signers::get_signer(&signers, &"alice").unwrap();
 
 }
 
