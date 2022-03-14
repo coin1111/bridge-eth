@@ -4,17 +4,12 @@ use ethers::{
     types::TransactionRequest,
 };
 use bridge_ethers::config;
-use bridge_ethers::signers;
 use std::convert::TryFrom;
 use ethers::abi::Abi;
 use ethers::contract::Contract;
 use ethers::types::{Address, H256};
-use serde_json::Error;
 use std::fs;
-use std::io::Read;
-use async_std::task;
 use std::convert::TryInto;
-use tokio::runtime::Runtime;
 
 #[tokio::main]
 async fn main() {
@@ -35,10 +30,11 @@ async fn main() {
     let validator_wallet = bridge_ethers::signers::get_signer(&signers, &"alice").unwrap();
     let bridge_escrow_json = fs::read_to_string("abi/contracts/BridgeEscrow.sol/BridgeEscrow.json").unwrap();
     let abi: Abi = serde_json::from_str(&bridge_escrow_json).unwrap();
-    let client = validator_wallet.connect(provider);
+    let client = validator_wallet.clone().connect(provider.clone());
     let bridge_escrow_contract = Contract::new(escrow_addr, abi, &client);
     println!("bridge_escrow_contract: {:?}",bridge_escrow_contract);
-    let transfer_id_str="eab47fa3a3dc42bc8cbc48c02182669e";
+    println!("caller: {:?}",Address::from(validator_wallet.private_key()));
+    let transfer_id_str="eab47fa3a3dc42bc8cbc48c02182667e";
     let transfer_id:[u8;16] = hex_to_bytes(&String::from(transfer_id_str)).unwrap()
         .try_into().unwrap();
     let balance:u64 = 10;
@@ -46,20 +42,35 @@ async fn main() {
              Address::from(receiver_wallet.private_key()),
              balance,
              transfer_id);
-    let data = bridge_escrow_contract
+    let  data = bridge_escrow_contract
+        .connect(&client)
         .method::<_, ()>("withdrawFromEscrowThis",
                            (
                                Address::from(sender_wallet.private_key()),
                                Address::from(receiver_wallet.private_key()),
                                balance,
                                transfer_id)).map_err(|e|{
-        println!("Error: {}",e)
-    }).unwrap();
-        let tx_hash = data
-            .send().await.map_err(|e|{
-            println!("Error tx: {:?}",e)
-        }).unwrap();
-        println!("withdrawFromEscrowThis: {:?}", tx_hash);
+        println!("Error data: {}",e)
+    }).unwrap().gas_price(83241151);
+    let calldata = data.call().await
+        .map_err(|e|{
+            println!("Error calldata: {}",e)
+        })
+        .unwrap();
+    println!("calldata: {:?}",calldata);
+    let gas_price = provider.clone().get_gas_price().await;
+    println!("gas price: {:?}",gas_price);
+    let pending_tx = data.send().await
+        .map_err(|e|{
+            println!("Error pending: {}",e)
+        })
+        .unwrap();
+    println!("pending_tx: {:?}",pending_tx);
+        // let tx_hash = data
+        //     .send().await.map_err(|e|{
+        //     println!("Error tx: {:?}",e)
+        // }).unwrap();
+        // println!("withdrawFromEscrowThis: {:?}", tx_hash);
 
     fn hex_to_bytes(s: &String) -> Option<Vec<u8>> {
         if s.len() % 2 == 0 {
