@@ -25,4 +25,34 @@ impl Config {
             .parse::<Address>()
             .map_err(|e| format!("error parsing address: {:?}", e))
     }
+    /// Gets provider url
+    pub fn get_provider_url(&self) -> Result<String, String> {
+        self.obj
+            .get("url")
+            .map_or_else(
+                || Err(format!("error url value is missing")),
+                |x| {
+                    Ok(x.as_str().map_or_else(
+                        || Err(format!("error url value is invalid")),
+                        |x| Ok(String::from(x)),
+                    ))
+                },
+            )
+            .and_then(|x| x)
+    }
+    /// Gets gas price
+    pub fn get_gas_price(&self) -> Result<u64, String> {
+        self.obj
+            .get("gasPrice")
+            .map_or_else(
+                || Err(format!("error gasPrice value is missing")),
+                |x| {
+                    Ok(x.as_u64().map_or_else(
+                        || Err(format!("error gasPrice value is invalid")),
+                        |x| Ok(x),
+                    ))
+                },
+            )
+            .and_then(|x| x)
+    }
 }

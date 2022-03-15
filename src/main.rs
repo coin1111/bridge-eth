@@ -2,7 +2,7 @@ use bridge_ethers::bridge_escrow::BridgeEscrow;
 use bridge_ethers::util::TransferId;
 use ethers::providers::{Http, Provider};
 use ethers::types::Address;
-use std::convert::{TryFrom};
+use std::convert::TryFrom;
 use std::env;
 use std::process::exit;
 
@@ -14,11 +14,13 @@ async fn main() {
         println!("Usage: bridge-eth withdraw <sender> <receiver> <balance> <transfer_id>");
         exit(0);
     }
-    let gas_price = 83241151;
-    let provider = Provider::<Http>::try_from("http://localhost:8545").unwrap();
+
     let config = bridge_ethers::config::Config::new(".bridge_escrow.config").unwrap();
     let escrow_addr = config.get_escrow_contract_address().unwrap();
     println!("escrow_addr: {:?}", escrow_addr);
+    let url = config.get_provider_url().unwrap();
+    let gas_price = config.get_gas_price().unwrap();
+    let provider = Provider::<Http>::try_from(url.as_str()).unwrap();
     let signers = bridge_ethers::signers::get_signers().unwrap();
 
     let validator_wallet = bridge_ethers::signers::get_signer(&signers, &"alice").unwrap();
@@ -29,7 +31,6 @@ async fn main() {
         Address::from(validator_wallet.private_key())
     );
     let bridge_escrow = BridgeEscrow::new(escrow_addr, path_abi, &client).unwrap();
-
 
     let data = if args[1] == "withdraw" {
         if args.len() < 6 {
@@ -55,13 +56,10 @@ async fn main() {
     } else if args[1] == "close-transfer-account" {
         let transfer_id_str = args[2].clone();
         let transfer_id = TransferId::new(&transfer_id_str).unwrap();
-        let data = bridge_escrow.close_transfer_account(
-            transfer_id.bytes,
-            gas_price,
-        );
+        let data = bridge_escrow.close_transfer_account(transfer_id.bytes, gas_price);
         data
     } else {
-        println!("{} is not supported",args[1]);
+        println!("{} is not supported", args[1]);
         exit(1);
     };
     let pending_tx = data
@@ -71,5 +69,4 @@ async fn main() {
         .map_err(|e| println!("Error pending: {}", e))
         .unwrap();
     println!("pending_tx: {:?}", pending_tx);
-
 }
