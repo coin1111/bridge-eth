@@ -24,6 +24,20 @@ impl<'a, P: JsonRpcClient> BridgeEscrow<'a, P> {
         })
     }
 
+    pub fn create_transfer_account<T: Into<U256>>(
+        &self,
+        receiver: Address,
+        transfer_id: [u8; 16],
+        amount: u64,
+        gas_price: T,
+    ) -> Result<ContractCall<P, Wallet, ()>, String> {
+        let data = self
+            .contract
+            .method::<_, ()>("createTransferAccountThis", (receiver, amount, transfer_id))
+            .map_err(|e| format!("Error data: {:?}", e))?;
+        Ok(data.gas_price(gas_price))
+    }
+
     pub fn withdraw_from_escrow_this<T: Into<U256>>(
         &self,
         sender: Address,
@@ -36,12 +50,7 @@ impl<'a, P: JsonRpcClient> BridgeEscrow<'a, P> {
             .contract
             .method::<_, ()>(
                 "withdrawFromEscrowThis",
-                (
-                    sender,
-                    receiver,
-                    balance,
-                    transfer_id,
-                ),
+                (sender, receiver, balance, transfer_id),
             )
             .map_err(|e| format!("Error data: {:?}", e))?;
         Ok(data.gas_price(gas_price))

@@ -25,6 +25,16 @@ impl Config {
             .parse::<Address>()
             .map_err(|e| format!("error parsing address: {:?}", e))
     }
+
+    pub fn get_ol_contract_address(&self) -> Result<Address, String> {
+        let addr_str = self.obj.get("olTokenContract").map_or_else(
+            || Err(format!("error olTokenContract value is missing")),
+            |x| Ok(x),
+        )?;
+        (addr_str.to_string().replace("\"", ""))[2..]
+            .parse::<Address>()
+            .map_err(|e| format!("error parsing address: {:?}", e))
+    }
     /// Gets provider url
     pub fn get_provider_url(&self) -> Result<String, String> {
         self.obj

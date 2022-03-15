@@ -7,5 +7,6 @@ mod tests {
 }
 pub mod bridge_escrow;
 pub mod config;
+pub mod ol_token;
 pub mod signers;
 pub mod util;
