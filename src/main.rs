@@ -9,9 +9,10 @@ use std::process::exit;
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
+    if args.len() < 2 || args[1] == "-h" || args[1] == "--help" {
         println!("Usage: bridge-eth <action> <args>");
         println!("Usage: bridge-eth withdraw <sender> <receiver> <balance> <transfer_id>");
+        println!("Usage: bridge-eth close-transfer-account <transfer_id>");
         exit(0);
     }
 
@@ -46,8 +47,8 @@ async fn main() {
         let receiver_wallet = bridge_ethers::signers::get_signer(&signers, &receiver_name).unwrap();
         let transfer_id = TransferId::new(&transfer_id_str).unwrap();
         let data = bridge_escrow.withdraw_from_escrow_this(
-            sender_wallet,
-            receiver_wallet,
+            Address::from(sender_wallet.private_key()),
+            Address::from(receiver_wallet.private_key()),
             transfer_id.bytes,
             balance,
             gas_price,

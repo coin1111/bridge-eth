@@ -26,8 +26,8 @@ impl<'a, P: JsonRpcClient> BridgeEscrow<'a, P> {
 
     pub fn withdraw_from_escrow_this<T: Into<U256>>(
         &self,
-        sender: Wallet,
-        receiver: Wallet,
+        sender: Address,
+        receiver: Address,
         transfer_id: [u8; 16],
         balance: u64,
         gas_price: T,
@@ -37,8 +37,8 @@ impl<'a, P: JsonRpcClient> BridgeEscrow<'a, P> {
             .method::<_, ()>(
                 "withdrawFromEscrowThis",
                 (
-                    Address::from(sender.private_key()),
-                    Address::from(receiver.private_key()),
+                    sender,
+                    receiver,
                     balance,
                     transfer_id,
                 ),
