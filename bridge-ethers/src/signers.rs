@@ -1,24 +1,17 @@
-use ethers::{
-    providers::{Http, Provider},
-    signers::Wallet,
-    types::TransactionRequest,
-};
 use std::collections::HashMap;
 use std::fs;
-use std::io::{Error, ErrorKind};
-use std::iter::FromIterator;
 use std::str::FromStr;
 pub fn get_signer(
     signers: &HashMap<&str, ethers::signers::Wallet>,
     nick: &str,
 ) -> Result<ethers::signers::Wallet, String> {
-    if (!nick.clone().starts_with("0x")) {
-             match signers.get(&nick as &str)  {
+    if !nick.clone().starts_with("0x") {
+        match signers.get(&nick as &str) {
             Some(w) => Ok(w.clone()),
-            None => Err(format!("user {} is not found",nick))
+            None => Err(format!("user {} is not found", nick)),
         }
     } else {
-        ethers::signers::Wallet::from_str(&nick).map_err(|e|{e.to_string()})
+        ethers::signers::Wallet::from_str(&nick).map_err(|e| e.to_string())
     }
 }
 
