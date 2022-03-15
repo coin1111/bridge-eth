@@ -1,6 +1,6 @@
 use ethers::{
     abi::Abi, contract::Contract, prelude::builders::ContractCall, prelude::Client,
-    providers::JsonRpcClient, signers::Wallet, types::Address,
+    providers::JsonRpcClient, signers::Wallet, types::Address, types::U256,
 };
 use std::fs;
 
@@ -24,17 +24,16 @@ impl<'a, P: JsonRpcClient> BridgeEscrow<'a, P> {
         })
     }
 
-    pub fn withdraw_from_escrow_this(
+    pub fn withdraw_from_escrow_this<T: Into<U256>>(
         &self,
         sender: Wallet,
         receiver: Wallet,
-        client: &'a Client<P, Wallet>,
         transfer_id: [u8; 16],
         balance: u64,
-    ) -> ContractCall<P, Wallet, ()> {
+        gas_price: T,
+    ) -> Result<ContractCall<P, Wallet, ()>, String> {
         let data = self
             .contract
-            .connect(client)
             .method::<_, ()>(
                 "withdrawFromEscrowThis",
                 (
@@ -44,9 +43,19 @@ impl<'a, P: JsonRpcClient> BridgeEscrow<'a, P> {
                     transfer_id,
                 ),
             )
+            .map_err(|e| format!("Error data: {:?}", e))?;
+        Ok(data.gas_price(gas_price))
+    }
+    pub fn close_transfer_account<T: Into<U256>>(
+        &self,
+        transfer_id: [u8; 16],
+        gas_price: T,
+    ) -> Result<ContractCall<P, Wallet, ()>, String> {
+        let data = self
+            .contract
+            .method::<_, ()>("closeTransferAccountSender", (transfer_id,))
             .map_err(|e| println!("Error data: {}", e))
-            .unwrap()
-            .gas_price(83241151);
-        data
+            .map_err(|e| format!("Error data: {:?}", e))?;
+        Ok(data.gas_price(gas_price))
     }
 }

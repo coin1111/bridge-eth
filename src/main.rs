@@ -3,9 +3,14 @@ use bridge_ethers::util::TransferId;
 use ethers::providers::{Http, Provider};
 use ethers::types::Address;
 use std::convert::TryFrom;
+use std::env;
 
 #[tokio::main]
 async fn main() {
+    for argument in env::args() {
+        println!("{}", argument);
+    }
+
     let provider = Provider::<Http>::try_from("http://localhost:8545").unwrap();
     let config = bridge_ethers::config::Config::new(".bridge_escrow.config").unwrap();
     let escrow_addr = config.get_escrow_contract_address().unwrap();
@@ -27,11 +32,12 @@ async fn main() {
     let data = bridge_escrow.withdraw_from_escrow_this(
         sender_wallet,
         receiver_wallet,
-        &client,
         transfer_id.bytes,
         balance,
+        83241151,
     );
     let pending_tx = data
+        .unwrap()
         .send()
         .await
         .map_err(|e| println!("Error pending: {}", e))
