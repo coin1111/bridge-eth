@@ -36,4 +36,12 @@ impl<'a, P: JsonRpcClient> OLToken<'a, P> {
             .map_err(|e| format!("Error data: {:?}", e))?;
         Ok(data.gas_price(gas_price))
     }
+
+    pub fn balance_of(&self, account: Address) -> Result<ContractCall<P, Wallet, U256>, String> {
+        let data = self
+            .contract
+            .method::<_, U256>("balanceOf", account)
+            .map_err(|e| format!("Error data: {:?}", e))?;
+        Ok(data)
+    }
 }

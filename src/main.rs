@@ -15,6 +15,7 @@ async fn main() {
         println!("Usage: bridge-eth deposit <sender> <receiver> <amount> <transfer_id>");
         println!("Usage: bridge-eth withdraw <sender> <receiver> <balance> <transfer_id>");
         println!("Usage: bridge-eth close-transfer-account <transfer_id>");
+        println!("Usage: bridge-eth balance <account>");
         exit(0);
     }
 
@@ -36,7 +37,7 @@ async fn main() {
     let path_abi_ol = "abi/contracts/OLToken.sol/OLToken.json";
     if args[1] == "deposit" {
         if args.len() < 6 {
-            println!("Usage: bridge-eth withdraw <sender> <receiver> <balance> <transfer_id>");
+            println!("Usage: bridge-eth deposit <sender> <receiver> <balance> <transfer_id>");
             exit(1);
         }
 
@@ -121,6 +122,27 @@ async fn main() {
             .map_err(|e| println!("Error pending: {}", e))
             .unwrap();
         println!("pending_tx: {:?}", pending_tx);
+    } else if args[1] == "balance" {
+        if args.len() < 3 {
+            println!("Usage: bridge-eth balance <account>");
+            exit(1);
+        }
+
+        let sender_name = args[2].clone();
+        let sender_wallet = bridge_ethers::signers::get_signer(&signers, &sender_name).unwrap();
+
+        let ol_addr = config.get_ol_contract_address().unwrap();
+        let client_ol = sender_wallet.clone().connect(provider.clone());
+        let ol_token = OLToken::new(ol_addr, path_abi_ol, &client_ol).unwrap();
+
+        let data = ol_token.balance_of(Address::from(sender_wallet.private_key()));
+        let call = data
+            .unwrap()
+            .call()
+            .await
+            .map_err(|e| println!("Error pending: {}", e))
+            .unwrap();
+        println!("call: {:?}", call);
     } else {
         println!("{} is not supported", args[1]);
         exit(1);
