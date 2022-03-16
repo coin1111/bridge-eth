@@ -5,3 +5,5 @@ cargo run --package bridge-eth --bin bridge-eth -- deposit pete  todd 10 "$trans
 cargo run --package bridge-eth --bin bridge-eth -- withdraw pete todd 10 "$transfer_id"
 
 cargo run --package bridge-eth --bin bridge-eth -- close-transfer-account "$transfer_id"
+
+run --package bridge-eth --bin bridge-eth -- balance todd

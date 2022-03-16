@@ -1,8 +1,8 @@
-use bridge_ethers::bridge_escrow::BridgeEscrow;
-use bridge_ethers::ol_token::OLToken;
+use bridge_ethers::bridge_escrow_mod;
+use bridge_ethers::oltoken_mod;
 use bridge_ethers::util::TransferId;
 use ethers::providers::{Http, Provider};
-use ethers::types::Address;
+use ethers::types::{Address, U256};
 use std::convert::TryFrom;
 use std::env;
 use std::process::exit;
@@ -33,8 +33,6 @@ async fn main() {
         Address::from(validator_wallet.private_key())
     );
 
-    let path_abi_escrow = "abi/contracts/BridgeEscrow.sol/BridgeEscrow.json";
-    let path_abi_ol = "abi/contracts/OLToken.sol/OLToken.json";
     if args[1] == "deposit" {
         if args.len() < 6 {
             println!("Usage: bridge-eth deposit <sender> <receiver> <balance> <transfer_id>");
@@ -51,11 +49,12 @@ async fn main() {
 
         let ol_addr = config.get_ol_contract_address().unwrap();
         let client_ol = sender_wallet.clone().connect(provider.clone());
-        let ol_token = OLToken::new(ol_addr, path_abi_ol, &client_ol).unwrap();
+        let ol_token = oltoken_mod::OLToken::new(ol_addr, &client_ol);
+        let data_approve = ol_token
+            .approve(escrow_addr, U256::from(amount))
+            .gas_price(gas_price);
 
-        let data_approve = ol_token.approve(escrow_addr, amount, gas_price);
         let pending_tx_approve = data_approve
-            .unwrap()
             .send()
             .await
             .map_err(|e| println!("Error pending: {}", e))
@@ -63,16 +62,16 @@ async fn main() {
         println!("pending_tx_approve: {:?}", pending_tx_approve);
 
         let client = sender_wallet.clone().connect(provider.clone());
-        let bridge_escrow = BridgeEscrow::new(escrow_addr, path_abi_escrow, &client).unwrap();
+        let bridge_escrow = bridge_escrow_mod::BridgeEscrow::new(escrow_addr, &client);
 
-        let data = bridge_escrow.create_transfer_account(
-            Address::from(receiver_wallet.private_key()),
-            transfer_id.bytes,
-            amount,
-            gas_price,
-        );
+        let data = bridge_escrow
+            .create_transfer_account_this(
+                Address::from(receiver_wallet.private_key()),
+                amount,
+                transfer_id.bytes,
+            )
+            .gas_price(gas_price);
         let pending_tx = data
-            .unwrap()
             .send()
             .await
             .map_err(|e| println!("Error pending: {}", e))
@@ -85,7 +84,7 @@ async fn main() {
         }
 
         let client = validator_wallet.clone().connect(provider.clone());
-        let bridge_escrow = BridgeEscrow::new(escrow_addr, path_abi_escrow, &client).unwrap();
+        let bridge_escrow = bridge_escrow_mod::BridgeEscrow::new(escrow_addr, &client);
 
         let sender_name = args[2].clone();
         let receiver_name = args[3].clone();
@@ -94,15 +93,15 @@ async fn main() {
         let sender_wallet = bridge_ethers::signers::get_signer(&signers, &sender_name).unwrap();
         let receiver_wallet = bridge_ethers::signers::get_signer(&signers, &receiver_name).unwrap();
         let transfer_id = TransferId::new(&transfer_id_str).unwrap();
-        let data = bridge_escrow.withdraw_from_escrow_this(
-            Address::from(sender_wallet.private_key()),
-            Address::from(receiver_wallet.private_key()),
-            transfer_id.bytes,
-            balance,
-            gas_price,
-        );
+        let data = bridge_escrow
+            .withdraw_from_escrow_this(
+                Address::from(sender_wallet.private_key()),
+                Address::from(receiver_wallet.private_key()),
+                balance,
+                transfer_id.bytes,
+            )
+            .gas_price(gas_price);
         let pending_tx = data
-            .unwrap()
             .send()
             .await
             .map_err(|e| println!("Error pending: {}", e))
@@ -110,13 +109,14 @@ async fn main() {
         println!("pending_tx: {:?}", pending_tx);
     } else if args[1] == "close-transfer-account" {
         let client = validator_wallet.clone().connect(provider.clone());
-        let bridge_escrow = BridgeEscrow::new(escrow_addr, path_abi_escrow, &client).unwrap();
+        let bridge_escrow = bridge_escrow_mod::BridgeEscrow::new(escrow_addr, &client);
 
         let transfer_id_str = args[2].clone();
         let transfer_id = TransferId::new(&transfer_id_str).unwrap();
-        let data = bridge_escrow.close_transfer_account(transfer_id.bytes, gas_price);
+        let data = bridge_escrow
+            .close_transfer_account_sender(transfer_id.bytes)
+            .gas_price(gas_price);
         let pending_tx = data
-            .unwrap()
             .send()
             .await
             .map_err(|e| println!("Error pending: {}", e))
@@ -133,11 +133,10 @@ async fn main() {
 
         let ol_addr = config.get_ol_contract_address().unwrap();
         let client_ol = sender_wallet.clone().connect(provider.clone());
-        let ol_token = OLToken::new(ol_addr, path_abi_ol, &client_ol).unwrap();
+        let ol_token = oltoken_mod::OLToken::new(ol_addr, &client_ol);
 
         let data = ol_token.balance_of(Address::from(sender_wallet.private_key()));
         let call = data
-            .unwrap()
             .call()
             .await
             .map_err(|e| println!("Error pending: {}", e))
