@@ -96,21 +96,7 @@ mod bridge_escrow_mod {
         pub fn get_locked_account_info(
             &self,
             transfer_id: [u8; 16],
-        ) -> ContractCall<
-            'a,
-            P,
-            S,
-            (
-                Address,
-                [u8; 16],
-                Address,
-                [u8; 16],
-                u64,
-                [u8; 16],
-                U256,
-                bool,
-            ),
-        > {
+        ) -> ContractCall<'a, P, S, Token> {
             self.0
                 .method_hash([110, 249, 2, 216], (transfer_id,))
                 .expect("method not found (this should never happen)")
@@ -166,21 +152,7 @@ mod bridge_escrow_mod {
         pub fn get_unlocked_account_info(
             &self,
             transfer_id: [u8; 16],
-        ) -> ContractCall<
-            'a,
-            P,
-            S,
-            (
-                Address,
-                [u8; 16],
-                Address,
-                [u8; 16],
-                u64,
-                [u8; 16],
-                U256,
-                bool,
-            ),
-        > {
+        ) -> ContractCall<'a, P, S, Token> {
             self.0
                 .method_hash([200, 41, 248, 231], (transfer_id,))
                 .expect("method not found (this should never happen)")

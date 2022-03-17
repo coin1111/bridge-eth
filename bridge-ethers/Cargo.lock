@@ -83,6 +83,7 @@ name = "bridge-ethers"
 version = "0.1.0"
 dependencies = [
  "ethers",
+ "ethers-core",
  "serde_json",
 ]
 

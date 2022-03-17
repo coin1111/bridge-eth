@@ -15,6 +15,8 @@ async fn main() {
         println!("Usage: bridge-eth deposit <sender> <receiver> <amount> <transfer_id>");
         println!("Usage: bridge-eth withdraw <sender> <receiver> <balance> <transfer_id>");
         println!("Usage: bridge-eth close-transfer-account <transfer_id>");
+        println!("Usage: bridge-eth get-locked-info <transfer_id>");
+        println!("Usage: bridge-eth get-unlocked-info <transfer_id>");
         println!("Usage: bridge-eth balance <account>");
         exit(0);
     }
@@ -122,6 +124,32 @@ async fn main() {
             .map_err(|e| println!("Error pending: {}", e))
             .unwrap();
         println!("pending_tx: {:?}", pending_tx);
+    } else if args[1] == "get-locked-info" {
+        let client = validator_wallet.clone().connect(provider.clone());
+        let bridge_escrow = bridge_escrow_mod::BridgeEscrow::new(escrow_addr, &client);
+
+        let transfer_id_str = args[2].clone();
+        let transfer_id = TransferId::new(&transfer_id_str).unwrap();
+        let data = bridge_escrow.get_locked_account_info(transfer_id.bytes);
+        let info = data
+            .call()
+            .await
+            .map_err(|e| println!("Error pending: {}", e))
+            .unwrap();
+        println!("info: {:?}", info);
+    } else if args[1] == "get-unlocked-info" {
+        let client = validator_wallet.clone().connect(provider.clone());
+        let bridge_escrow = bridge_escrow_mod::BridgeEscrow::new(escrow_addr, &client);
+
+        let transfer_id_str = args[2].clone();
+        let transfer_id = TransferId::new(&transfer_id_str).unwrap();
+        let data = bridge_escrow.get_unlocked_account_info(transfer_id.bytes);
+        let info = data
+            .call()
+            .await
+            .map_err(|e| println!("Error info: {}", e))
+            .unwrap();
+        println!("info: {:?}", info);
     } else if args[1] == "balance" {
         if args.len() < 3 {
             println!("Usage: bridge-eth balance <account>");
