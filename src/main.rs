@@ -1,6 +1,6 @@
 use bridge_ethers::bridge_escrow_mod;
 use bridge_ethers::oltoken_mod;
-use bridge_ethers::util::TransferId;
+use bridge_ethers::util::{AccountInfo, TransferId};
 use ethers::providers::{Http, Provider};
 use ethers::types::{Address, U256};
 use std::convert::TryFrom;
@@ -149,7 +149,8 @@ async fn main() {
             .await
             .map_err(|e| println!("Error info: {}", e))
             .unwrap();
-        println!("info: {:?}", info);
+        let ai = AccountInfo::from(info).unwrap();
+        println!("info: {:?}", ai);
     } else if args[1] == "balance" {
         if args.len() < 3 {
             println!("Usage: bridge-eth balance <account>");

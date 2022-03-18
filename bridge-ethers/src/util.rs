@@ -1,6 +1,11 @@
 use ethers::abi::Tokenizable;
 use ethers::types::H160;
 use std::convert::TryInto;
+use ethers_core::abi::Tokenize;
+use ethers::abi::Token::Address;
+use ethers::abi::Token::FixedBytes;
+use ethers::abi::Token::Uint;
+use ethers_core::abi::Token::Bool;
 
 /// Transfer id to track bridge transactions
 pub struct TransferId {
@@ -50,12 +55,39 @@ pub struct AccountInfo {
     idx: ethers::prelude::U256,
     is_closed: bool,
 }
+fn vec_to_array<T, const N: usize>(v: Vec<T>) -> [T; N] {
+    v.try_into()
+        .unwrap_or_else(|v: Vec<T>| panic!("Expected a Vec of length {} but it was {}", N, v.len()))
+}
 
 impl AccountInfo {
     pub fn from(tuple: ethers::abi::Token) -> Result<AccountInfo, String> {
-        let v: Vec<ethers::abi::Token> = tuple
-            .to_fixed_array()
-            .ok_or_else(|| format!("Can't conver to tuple"))?;
+        match  tuple.clone() {
+            ethers::abi::Token::Tuple(a) =>
+                {
+                    match &a[..] {
+                        [Address(sender_this), FixedBytes(sender_other),
+                        Address(receiver_this), FixedBytes(receiver_other), Uint(balance),
+                        FixedBytes(transfer_id), Uint(idx), Bool(is_closed)] =>
+                            {
+                        let ai = AccountInfo {
+                            sender_this:*sender_this,
+                            sender_other:vec_to_array(sender_other.to_vec().clone()),
+                            receiver_this:*receiver_this,
+                            receiver_other:vec_to_array(receiver_other.to_vec().clone()),
+                            balance:balance.as_u64(),
+                            transfer_id:vec_to_array(transfer_id.to_vec().clone()),
+                            idx:*idx,
+                            is_closed:*is_closed,
+                        };
+                        println!("{:?}", ai)},
+                        _ => (),
+                    };
+                },
+            _ => (),
+        };
+        println!("{:?}",tuple);
+        let v = tuple.clone().into_tokens();
         let sender_this: ethers::abi::Address = v[0]
             .clone()
             .to_address()
