@@ -1,11 +1,9 @@
-use ethers::abi::Tokenizable;
-use ethers::types::H160;
-use std::convert::TryInto;
-use ethers_core::abi::Tokenize;
 use ethers::abi::Token::Address;
 use ethers::abi::Token::FixedBytes;
 use ethers::abi::Token::Uint;
+use ethers::types::H160;
 use ethers_core::abi::Token::Bool;
+use std::convert::TryInto;
 
 /// Transfer id to track bridge transactions
 pub struct TransferId {
@@ -55,86 +53,34 @@ pub struct AccountInfo {
     idx: ethers::prelude::U256,
     is_closed: bool,
 }
-fn vec_to_array<T, const N: usize>(v: Vec<T>) -> [T; N] {
+fn vec_to_array<T, const N: usize>(v: Vec<T>) -> Result<[T; N], String> {
     v.try_into()
-        .unwrap_or_else(|v: Vec<T>| panic!("Expected a Vec of length {} but it was {}", N, v.len()))
+        .map_err(|v: Vec<T>| format!("Expected a Vec of length {} but it was {}", N, v.len()))
 }
 
 impl AccountInfo {
     pub fn from(tuple: ethers::abi::Token) -> Result<AccountInfo, String> {
-        match  tuple.clone() {
-            ethers::abi::Token::Tuple(a) =>
+        match tuple.clone() {
+            ethers::abi::Token::Tuple(a) => match &a[..] {
+                [Address(sender_this), FixedBytes(sender_other), Address(receiver_this), FixedBytes(receiver_other), Uint(balance), FixedBytes(transfer_id), Uint(idx), Bool(is_closed)] =>
                 {
-                    match &a[..] {
-                        [Address(sender_this), FixedBytes(sender_other),
-                        Address(receiver_this), FixedBytes(receiver_other), Uint(balance),
-                        FixedBytes(transfer_id), Uint(idx), Bool(is_closed)] =>
-                            {
-                        let ai = AccountInfo {
-                            sender_this:*sender_this,
-                            sender_other:vec_to_array(sender_other.to_vec().clone()),
-                            receiver_this:*receiver_this,
-                            receiver_other:vec_to_array(receiver_other.to_vec().clone()),
-                            balance:balance.as_u64(),
-                            transfer_id:vec_to_array(transfer_id.to_vec().clone()),
-                            idx:*idx,
-                            is_closed:*is_closed,
-                        };
-                        println!("{:?}", ai)},
-                        _ => (),
-                    };
-                },
-            _ => (),
-        };
-        println!("{:?}",tuple);
-        let v = tuple.clone().into_tokens();
-        let sender_this: ethers::abi::Address = v[0]
-            .clone()
-            .to_address()
-            .ok_or(format!("Can't conver sender_this"))?;
-        let sender_other: [u8; 16] = v[1]
-            .clone()
-            .to_fixed_bytes()
-            .ok_or(format!("Can't conver sender_other"))?
-            .try_into()
-            .map_err(|_| format!("Can't conver sender_other"))?;
-
-        let receiver_this: ethers::abi::Address = v[2]
-            .clone()
-            .to_address()
-            .ok_or(format!("Can't conver receiver_this"))?;
-        let receiver_other: [u8; 16] = v[3]
-            .clone()
-            .to_fixed_bytes()
-            .ok_or(format!("Can't conver receiver_other"))?
-            .try_into()
-            .map_err(|_| format!("Can't conver receiver_other"))?;
-        let balance: u64 = v[4]
-            .clone()
-            .to_uint()
-            .ok_or(format!("Can't conver balance"))?
-            .as_u64();
-        let transfer_id: [u8; 16] = v[5]
-            .clone()
-            .to_fixed_bytes()
-            .ok_or(format!("cannot convert transfer_id"))?
-            .try_into()
-            .map_err(|_| format!("Can't conver transfer_id"))?;
-        let idx: ethers::prelude::U256 =
-            ethers::abi::Uint::from_token(v[6].clone()).map_err(|_| format!("Can't conver idx"))?;
-        let is_closed: bool = v[7]
-            .clone()
-            .to_bool()
-            .ok_or(format!("Can't conver is_closed"))?;
-        Ok(AccountInfo {
-            sender_this,
-            sender_other,
-            receiver_this,
-            receiver_other,
-            balance,
-            transfer_id,
-            idx,
-            is_closed,
-        })
+                    let sender_other = vec_to_array(sender_other.to_vec().clone())?;
+                    let receiver_other = vec_to_array(receiver_other.to_vec().clone())?;
+                    let transfer_id = vec_to_array(transfer_id.to_vec().clone())?;
+                    Ok(AccountInfo {
+                        sender_this: *sender_this,
+                        sender_other: sender_other,
+                        receiver_this: *receiver_this,
+                        receiver_other: receiver_other,
+                        balance: balance.as_u64(),
+                        transfer_id: transfer_id,
+                        idx: *idx,
+                        is_closed: *is_closed,
+                    })
+                }
+                _ => Err(format!("Cannot match array {:?}", a)),
+            },
+            _ => Err(format!("Cannot match tuple {:?}", tuple)),
+        }
     }
 }

@@ -136,7 +136,8 @@ async fn main() {
             .await
             .map_err(|e| println!("Error pending: {}", e))
             .unwrap();
-        println!("info: {:?}", info);
+        let ai = AccountInfo::from(info).unwrap();
+        println!("locked: {:?}", ai);
     } else if args[1] == "get-unlocked-info" {
         let client = validator_wallet.clone().connect(provider.clone());
         let bridge_escrow = bridge_escrow_mod::BridgeEscrow::new(escrow_addr, &client);
@@ -150,7 +151,7 @@ async fn main() {
             .map_err(|e| println!("Error info: {}", e))
             .unwrap();
         let ai = AccountInfo::from(info).unwrap();
-        println!("info: {:?}", ai);
+        println!("unlocked: {:?}", ai);
     } else if args[1] == "balance" {
         if args.len() < 3 {
             println!("Usage: bridge-eth balance <account>");
