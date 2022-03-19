@@ -20,6 +20,7 @@ async fn main() {
         println!("Usage: bridge-eth close-transfer-account <transfer_id>");
         println!("Usage: bridge-eth get-locked-info <transfer_id>");
         println!("Usage: bridge-eth get-unlocked-info <transfer_id>");
+        println!("Usage: bridge-eth get-next-transfer-id <start> <n>");
         println!("Usage: bridge-eth balance <account>");
         exit(0);
     }
@@ -57,6 +58,8 @@ async fn main() {
         get_locked_info_cmd(&args, escrow_addr, &provider, &validator_wallet).await;
     } else if args[1] == "get-unlocked-info" {
         get_unlocked_info_cmd(&args, escrow_addr, &provider, validator_wallet).await;
+    } else if args[1] == "get-next-transfer-id" {
+        get_next_transfer_id_cmd(&args, escrow_addr, &provider, validator_wallet).await;
     } else if args[1] == "balance" {
         balance_cmd(&args, config, provider, &signers).await;
     } else {
@@ -90,6 +93,31 @@ async fn balance_cmd<P: JsonRpcClient>(
         .map_err(|e| println!("Error pending: {}", e))
         .unwrap();
     println!("call: {:?}", call);
+}
+async fn get_next_transfer_id_cmd<P: JsonRpcClient>(
+    args: &Vec<String>,
+    escrow_addr: Address,
+    provider: &Provider<P>,
+    validator_wallet: Wallet,
+) {
+    if args.len() < 4 {
+        panic!("too few arguments");
+    }
+    let client = validator_wallet.clone().connect(provider.clone());
+    let bridge_escrow = bridge_escrow_mod::BridgeEscrow::new(escrow_addr, &client);
+
+    let start_i: u64 = args[2].clone().parse::<u64>().unwrap();
+    let n_i: u64 = args[3].clone().parse::<u64>().unwrap();
+    let start = U256::from(start_i);
+    let n = U256::from(n_i);
+    let data = bridge_escrow.get_next_transfer_id(start, n);
+    let call = data.call();
+    let info = call
+        .await
+        .map_err(|e| println!("Error info: {}", e))
+        .unwrap();
+    // let ai = AccountInfo::from(info).unwrap();
+    println!("next transfer_id: {:?}", info.0)
 }
 
 async fn get_unlocked_info_cmd<P: JsonRpcClient>(
