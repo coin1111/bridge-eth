@@ -15,7 +15,7 @@ pub fn get_signer(
     }
 }
 
-fn get_private_key(path: &str) -> Result<String, String> {
+pub fn get_private_key(path: &str) -> Result<String, String> {
     let line = fs::read_to_string(path).map_err(|e| e.to_string())?;
     // line[1].split(":")[1].trim();
     match line.split("\n").take(2).last().and_then(|s| {
