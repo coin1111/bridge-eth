@@ -1,6 +1,7 @@
 use ethers::types::Address;
 use serde_json::{Map, Value};
 use std::fs;
+#[derive(Debug, Clone)]
 pub struct Config {
     obj: Map<String, Value>,
 }
