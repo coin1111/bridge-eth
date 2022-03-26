@@ -44,14 +44,14 @@ pub fn hex_to_bytes(s: &String) -> Option<Vec<u8>> {
 
 #[derive(Debug)]
 pub struct AccountInfo {
-    sender_this: H160,
-    sender_other: [u8; 16],
-    receiver_this: H160,
-    receiver_other: [u8; 16],
-    balance: u64,
-    transfer_id: [u8; 16],
-    idx: ethers::prelude::U256,
-    is_closed: bool,
+    pub sender_this: H160,
+    pub sender_other: [u8; 16],
+    pub receiver_this: H160,
+    pub receiver_other: [u8; 16],
+    pub balance: u64,
+    pub transfer_id: [u8; 16],
+    pub idx: ethers::prelude::U256,
+    pub is_closed: bool,
 }
 pub fn vec_to_array<T, const N: usize>(v: Vec<T>) -> Result<[T; N], String> {
     v.try_into()
