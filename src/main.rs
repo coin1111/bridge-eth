@@ -1,7 +1,7 @@
 use bridge_ethers::bridge_escrow_mod;
 use bridge_ethers::config::Config;
 use bridge_ethers::oltoken_mod;
-use bridge_ethers::util::{AccountInfo, TransferId};
+use bridge_ethers::util::{hex_to_bytes, vec_to_array, AccountInfo, TransferId};
 use ethers::prelude::Wallet;
 use ethers::providers::{Http, JsonRpcClient, Provider};
 use ethers::types::{Address, U256};
@@ -242,15 +242,31 @@ async fn deposit_cmd<P: JsonRpcClient>(
     let amount = args[4].parse::<u64>().unwrap();
     let transfer_id_str = args[5].clone();
     let sender_wallet = bridge_ethers::signers::get_signer(&signers, &sender_name).unwrap();
-    let receiver_wallet = bridge_ethers::signers::get_signer(&signers, &receiver_name).unwrap();
-    let transfer_id = TransferId::new(&transfer_id_str).unwrap();
-
     let ol_addr = config.get_ol_contract_address().unwrap();
     let client_ol = sender_wallet.clone().connect(provider.clone());
     let ol_token = oltoken_mod::OLToken::new(ol_addr, &client_ol);
     let data_approve = ol_token
         .approve(escrow_addr, U256::from(amount))
         .gas_price(gas_price);
+
+    let receiver_ol = match receiver_name.get(..2) {
+        Some("0x") => receiver_name.get(2..).and_then(|s| {
+            hex_to_bytes(&String::from(s).to_lowercase()).and_then(|v| {
+                match vec_to_array::<u8, 16>(v) {
+                    Ok(a) => Some(a),
+                    _ => None,
+                }
+            })
+        }),
+        _ => None,
+    };
+    let receiver_address = if receiver_ol.is_none() {
+        bridge_ethers::signers::get_signer(&signers, &receiver_name)
+            .and_then(|w| Ok(Address::from(w.private_key())))
+    } else {
+        Err(format!("invalid eth receiver address"))
+    };
+    let transfer_id = TransferId::new(&transfer_id_str).unwrap();
 
     let pending_tx_approve = data_approve
         .send()
@@ -262,13 +278,15 @@ async fn deposit_cmd<P: JsonRpcClient>(
     let client = sender_wallet.clone().connect(provider.clone());
     let bridge_escrow = bridge_escrow_mod::BridgeEscrow::new(escrow_addr, &client);
 
-    let data = bridge_escrow
-        .create_transfer_account_this(
-            Address::from(receiver_wallet.private_key()),
-            amount,
-            transfer_id.bytes,
-        )
-        .gas_price(gas_price);
+    let data = if receiver_ol.is_none() {
+        bridge_escrow
+            .create_transfer_account_this(receiver_address.unwrap(), amount, transfer_id.bytes)
+            .gas_price(gas_price)
+    } else {
+        bridge_escrow
+            .create_transfer_account(receiver_ol.unwrap(), amount, transfer_id.bytes)
+            .gas_price(gas_price)
+    };
     let pending_tx = data
         .send()
         .await
