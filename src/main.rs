@@ -81,12 +81,31 @@ async fn balance_cmd<P: JsonRpcClient>(
 
     let sender_name = args[2].clone();
     let sender_wallet = bridge_ethers::signers::get_signer(&signers, &sender_name).unwrap();
+    let target = args.get(3).and_then(|x|{
+        let pubk = match x.get(..2) {
+            Some("0x") => x.get(2..).and_then(|s| {
+                hex_to_bytes(&String::from(s).to_lowercase()).and_then(|v| {
+                    match vec_to_array::<u8, 20>(v) {
+                        Ok(a) => Some(Address::from(a)),
+                        _ => None,
+                    }
+                })
+            }),
+            _ => None,
+        };
+        pubk
+    });
+
+    let target_addr = match target {
+        Some(t) => Address::from(t),
+        _ => Address::from(sender_wallet.public_key()),
+    };
 
     let ol_addr = config.get_ol_contract_address().unwrap();
     let client_ol = sender_wallet.clone().connect(provider.clone());
     let ol_token = oltoken_mod::OLToken::new(ol_addr, &client_ol);
 
-    let data = ol_token.balance_of(Address::from(sender_wallet.private_key()));
+    let data = ol_token.balance_of(target_addr);
     let call = data
         .call()
         .await
