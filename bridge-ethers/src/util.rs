@@ -4,15 +4,27 @@ use ethers::abi::Token::Uint;
 use ethers::types::H160;
 use ethers_core::abi::Token::Bool;
 use std::convert::TryInto;
+use uuid::Uuid;
 
 /// Transfer id to track bridge transactions
+#[derive(Debug, Clone)]
 pub struct TransferId {
     pub id: String,
     pub bytes: [u8; 16],
 }
 impl TransferId {
+    pub fn new() -> Result<TransferId, String> {
+        let uuid = *Uuid::new_v4().as_bytes();
+        let tid =
+            TransferId{
+                id : hex::encode(uuid),
+                bytes: uuid.clone(),
+            };
+
+        Ok(tid)
+    }
     /// Initialize using string literal
-    pub fn new(id: &str) -> Result<TransferId, String> {
+    pub fn from(id: &str) -> Result<TransferId, String> {
         let str = String::from(id);
         let bytes: [u8; 16] = hex_to_bytes(&str)
             .unwrap()

@@ -149,7 +149,7 @@ async fn get_unlocked_info_cmd<P: JsonRpcClient>(
     let bridge_escrow = bridge_escrow_mod::BridgeEscrow::new(escrow_addr, &client);
 
     let transfer_id_str = args[2].clone();
-    let transfer_id = TransferId::new(&transfer_id_str).unwrap();
+    let transfer_id = TransferId::from(&transfer_id_str).unwrap();
     let data = bridge_escrow.get_unlocked_account_info(transfer_id.bytes);
     let info = data
         .call()
@@ -170,7 +170,7 @@ async fn get_locked_info_cmd<P: JsonRpcClient>(
     let bridge_escrow = bridge_escrow_mod::BridgeEscrow::new(escrow_addr, &client);
 
     let transfer_id_str = args[2].clone();
-    let transfer_id = TransferId::new(&transfer_id_str).unwrap();
+    let transfer_id = TransferId::from(&transfer_id_str).unwrap();
     let data = bridge_escrow.get_locked_account_info(transfer_id.bytes);
     let info = data
         .call()
@@ -192,7 +192,7 @@ async fn close_transfer_account_cmd<P: JsonRpcClient>(
     let bridge_escrow = bridge_escrow_mod::BridgeEscrow::new(escrow_addr, &client);
 
     let transfer_id_str = args[2].clone();
-    let transfer_id = TransferId::new(&transfer_id_str).unwrap();
+    let transfer_id = TransferId::from(&transfer_id_str).unwrap();
     let data = bridge_escrow
         .close_transfer_account_sender(transfer_id.bytes)
         .gas_price(gas_price);
@@ -226,7 +226,7 @@ async fn withdraw_cmd<P: JsonRpcClient>(
     let transfer_id_str = args[5].clone();
     let sender_wallet = bridge_ethers::signers::get_signer(&signers, &sender_name).unwrap();
     let receiver_wallet = bridge_ethers::signers::get_signer(&signers, &receiver_name).unwrap();
-    let transfer_id = TransferId::new(&transfer_id_str).unwrap();
+    let transfer_id = TransferId::from(&transfer_id_str).unwrap();
     let data = bridge_escrow
         .withdraw_from_escrow_this(
             Address::from(sender_wallet.private_key()),
@@ -251,15 +251,21 @@ async fn deposit_cmd<P: JsonRpcClient>(
     provider: &Provider<P>,
     signers: &HashMap<&str, Wallet>,
 ) {
-    if args.len() < 6 {
-        println!("Usage: bridge-eth deposit <sender> <receiver> <balance> <transfer_id>");
+    if args.len() < 5 {
+        println!("Usage: bridge-eth deposit <sender> <receiver> <balance> [<transfer_id>]");
         exit(1);
     }
 
     let sender_name = args[2].clone();
     let receiver_name = args[3].clone();
     let amount = args[4].parse::<u64>().unwrap();
-    let transfer_id_str = args[5].clone();
+    let transfer_id = if args.len() > 5 {
+        TransferId::from(&args[5]).unwrap()
+    } else {
+        let tid = TransferId::new().unwrap();
+        println!("INFO: created transfer_id: {:?}", tid.id);
+        tid
+    };
     let sender_wallet = bridge_ethers::signers::get_signer(&signers, &sender_name).unwrap();
     let ol_addr = config.get_ol_contract_address().unwrap();
     let client_ol = sender_wallet.clone().connect(provider.clone());
@@ -285,7 +291,6 @@ async fn deposit_cmd<P: JsonRpcClient>(
     } else {
         Err(format!("invalid eth receiver address"))
     };
-    let transfer_id = TransferId::new(&transfer_id_str).unwrap();
 
     let pending_tx_approve = data_approve
         .send()
