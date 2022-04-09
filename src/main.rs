@@ -15,7 +15,7 @@ async fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 || args[1] == "-h" || args[1] == "--help" {
         println!("Usage: bridge-eth <action> <args>");
-        println!("Usage: bridge-eth deposit <sender> <receiver> <amount> <transfer_id>");
+        println!("Usage: bridge-eth deposit <sender> <receiver> <amount> [<transfer_id>]");
         println!("Usage: bridge-eth withdraw <sender> <receiver> <balance> <transfer_id>");
         println!("Usage: bridge-eth close-transfer-account <transfer_id>");
         println!("Usage: bridge-eth get-locked-info <transfer_id>");
