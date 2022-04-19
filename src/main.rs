@@ -31,7 +31,7 @@ async fn main() {
     let url = config.get_provider_url().unwrap();
     let gas_price = config.get_gas_price().unwrap();
     let provider: Provider<Http> = Provider::<Http>::try_from(url.as_str()).unwrap();
-    let signers = bridge_ethers::signers::get_signers().unwrap();
+    let signers = bridge_ethers::signers::get_signers("accounts").unwrap();
 
     let validator_wallet = bridge_ethers::signers::get_signer(&signers, &"alice").unwrap();
     println!(
