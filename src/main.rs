@@ -31,7 +31,8 @@ async fn main() {
     let url = config.get_provider_url().unwrap();
     let gas_price = config.get_gas_price().unwrap();
     let provider: Provider<Http> = Provider::<Http>::try_from(url.as_str()).unwrap();
-    let signers = bridge_ethers::signers::get_signers("accounts").unwrap();
+    let names = vec!["alice", "bob", "carol", "pete", "todd", "bridgeEscrow"];
+    let signers = bridge_ethers::signers::get_signers("accounts", names).unwrap();
 
     let validator_wallet = bridge_ethers::signers::get_signer(&signers, &"alice").unwrap();
     println!(
@@ -81,7 +82,7 @@ async fn balance_cmd<P: JsonRpcClient>(
 
     let sender_name = args[2].clone();
     let sender_wallet = bridge_ethers::signers::get_signer(&signers, &sender_name).unwrap();
-    let target = args.get(3).and_then(|x|{
+    let target = args.get(3).and_then(|x| {
         let pubk = match x.get(..2) {
             Some("0x") => x.get(2..).and_then(|s| {
                 hex_to_bytes(&String::from(s).to_lowercase()).and_then(|v| {

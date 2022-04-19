@@ -29,8 +29,7 @@ pub fn get_private_key(path: &str) -> Result<String, String> {
         None => Err(format!("can't find private key: {}", path)),
     }
 }
-pub fn get_signers(path: &str) -> Result<HashMap<&'static str, ethers::signers::Wallet>, String> {
-    let names = vec!["alice", "bob", "carol", "pete", "todd", "bridgeEscrow"];
+pub fn get_signers(path: &str, names: Vec<&'static str>) -> Result<HashMap<&'static str, ethers::signers::Wallet>, String> {
     let mut pairs: Vec<(&str, ethers::signers::Wallet)> = Vec::new();
     for n in names.iter() {
         let key = get_private_key(&format!("{}/{}.txt", path, n))?;
